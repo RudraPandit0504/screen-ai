@@ -204,9 +204,3 @@ ai-resume-screener/
 - Deployment target: AWS Lambda behind Amazon API Gateway
 - Groq API key is read from the `GROQ_API_KEY` environment variable
 - Lambda returns CORS headers for `OPTIONS,POST`
-
-## Verification
-
-The README was updated to reflect the current frontend flow, serverless AWS architecture, backend location, and UI screenshots.
-
-In this environment, `npm run build` did not complete because Vite/Tailwind attempted to load a Windows native dependency and failed with a local `EPERM` / binary loading error before bundling.
