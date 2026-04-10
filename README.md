@@ -1,16 +1,20 @@
-# React + Vite
+# Screen AI: Enterprise-Grade Resume Analysis System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An automated Applicant Tracking System (ATS) designed for high-speed resume screening and matching using Large Language Models (LLMs).
 
-Currently, two official plugins are available:
+## 🚀 The Architecture
+This project follows a modern **Serverless Architecture** to ensure zero cost when idle and high scalability.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React.js application hosted on **Amazon S3** (Static Website Hosting).
+- **API Layer:** **AWS API Gateway** acting as a secure entry point for frontend requests.
+- **Backend Logic:** **AWS Lambda** (Python) handling text processing and AI orchestration.
+- **AI Brain:** **Llama 3.1 8B** running on **Groq LPUs** for sub-second inference speed (~500 tokens/sec).
 
-## React Compiler
+## 🛠️ Technical Features
+- **Asynchronous Processing:** Backend logic is decoupled to handle resume parsing efficiently.
+- **Secure Secret Management:** API keys are managed via AWS environment variables to prevent credential leakage.
+- **JSON Structured Output:** Uses model-specific prompting to ensure consistent parsing of resume data into Matched Skills, Missing Skills, and overall Score.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🔒 Security & Performance
+- **CORS Configuration:** API Gateway restricted to specific origins to prevent unauthorized access.
+- **LPU Acceleration:** Leveraging Groq's Language Processing Units to achieve near-instant feedback for the user.
