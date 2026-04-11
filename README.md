@@ -216,8 +216,24 @@ ai-resume-screener/
 └── vite.config.js
 ```
 
-## Notes
+## Important Notes
 
-- Resume parsing quality depends on the PDF text layer
-- The API URL is hardcoded today; environment-based config would make deployment cleaner
-- If the Lambda response schema changes again, the frontend dashboard will need matching updates
+- Resume parsing happens in the browser using PDF.js loaded from a CDN.
+- Only PDF files are accepted by the uploader.
+- The app depends on the external screening API being available and returning the expected JSON shape.
+- There is currently no environment-variable based configuration for the API URL.
+- The Groq API key is kept server-side in the Lambda backend and is not exposed in the frontend.
+
+## Known Limitations
+
+- Complex PDF layouts may extract imperfectly because the app collects text layer content page by page.
+- If the hosted API changes its response format, the UI will break unless the frontend is updated too.
+- The backend is hosted on AWS free-tier infrastructure, so availability and throughput may be limited.
+
+## Backend Notes
+
+- Backend file: `lambda_function.py`
+- Model used: `Groq API with llama-3.1-8b-instant`
+- Deployment target: AWS Lambda behind Amazon API Gateway
+- Groq API key is read from the `GROQ_API_KEY` environment variable
+- Lambda returns CORS headers for `OPTIONS,POST`
