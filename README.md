@@ -23,9 +23,17 @@ Screen AI is built to simulate a strict screening workflow. A user pastes a job 
 
 ![Input screen](./public/screenshots/1.png)
 
-### Results Screen
+### Results Overview
 
 ![Results screen](./public/screenshots/2.png)
+
+### Skills Analysis
+
+![Skills analysis](./public/screenshots/3.png)
+
+### Score Breakdown And Actions
+
+![Score breakdown and actions](./public/screenshots/4.png)
 
 ## Architecture
 
