@@ -8,11 +8,12 @@ import PdfUploader from './components/PdfUploader';
 import ResultsDashboard from './components/ResultsDashboard';
 
 const API_URL = "https://byka9fvisi.execute-api.ap-south-1.amazonaws.com/prod/screen";
+const MIN_JOB_DESCRIPTION_LENGTH = 50;
+const MIN_RESUME_TEXT_LENGTH = 100;
 
 export default function App() {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
-  const [fileName, setFileName] = useState("");
 
   const [isExtracting, setIsExtracting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -42,7 +43,6 @@ export default function App() {
   const handleFileProcessed = (name, extractedText) => {
     setIsExtracting(true);
     setTimeout(() => {
-      setFileName(name);
       setResumeText(extractedText);
       setIsExtracting(false);
       setGlobalError(null);
@@ -51,7 +51,17 @@ export default function App() {
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim() || !resumeText.trim()) {
-      setGlobalError("MISSING_PARAMETERS: JOB_DESC & RESUME_PDF REQUIRED.");
+      setGlobalError("Both the job description and resume PDF text are required.");
+      return;
+    }
+
+    if (jobDescription.trim().length < MIN_JOB_DESCRIPTION_LENGTH) {
+      setGlobalError(`Job description is too short. Minimum ${MIN_JOB_DESCRIPTION_LENGTH} characters required.`);
+      return;
+    }
+
+    if (resumeText.trim().length < MIN_RESUME_TEXT_LENGTH) {
+      setGlobalError(`Resume text is too short. Minimum ${MIN_RESUME_TEXT_LENGTH} characters required.`);
       return;
     }
 
@@ -69,16 +79,17 @@ export default function App() {
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`SERVER_FAULT: [${response.status}]`);
+        throw new Error(data?.error || `Request failed with status ${response.status}.`);
       }
 
-      const data = await response.json();
       setResults(data);
 
     } catch (error) {
       console.error("API Error:", error);
-      setGlobalError(`EXECUTION_FAILED: ${error.message}`);
+      setGlobalError(error.message || "The analysis request failed.");
     } finally {
       setIsAnalyzing(false);
     }
