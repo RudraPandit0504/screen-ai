@@ -1,16 +1,21 @@
 # Screen AI: AI Resume Screener
 
-A full-stack AI-powered resume screening app that compares a candidate resume against a job description and returns an ATS-style match score, matched skills, missing skills, summary feedback, and actionable improvement suggestions.
+A full-stack AI resume screener that extracts text from PDF resumes in the browser, sends the resume plus a job description to an AWS Lambda API, and returns a strict ATS-style evaluation with detailed scoring, red flags, and hiring guidance.
 
-The app extracts text from uploaded PDF resumes in the browser, then sends the extracted resume text plus the job description to a hosted screening API for analysis.
-
-This project uses AWS for hosting and serverless backend infrastructure, and Groq with the `llama-3.1-8b-instant` model for resume analysis.
+The frontend is a React + Vite app. The backend is a Python Lambda function behind API Gateway that calls Groq securely with the `GROQ_API_KEY` stored server-side.
 
 ## Overview
 
-Screen AI is an ATS-style screening tool built to evaluate how well a resume matches a given job description. Users paste a job description, upload a resume PDF, and receive a compatibility score along with strengths, missing skills, and recommended next steps.
+Screen AI is built to simulate a strict screening workflow. A user pastes a job description, uploads a PDF resume, and receives:
 
-The frontend is hosted as a static React app, while the backend runs as a serverless API that securely calls Groq without exposing the API key in the browser.
+- an overall match score
+- a category score breakdown
+- matched skills with evidence
+- missing skills with impact and criticality
+- experience and seniority verdicts
+- red flags
+- concrete improvement actions
+- a hiring recommendation
 
 ## Preview
 
@@ -24,65 +29,59 @@ The frontend is hosted as a static React app, while the backend runs as a server
 
 ## Architecture
 
-This project follows a serverless architecture to stay low-cost on AWS free tier while remaining scalable.
-
 ### Frontend
 
-- React + Vite single-page app
-- Hosted as a static website on Amazon S3
-- Extracts resume text in the browser using PDF.js
-- Sends job description and resume text to the backend API
+- React 19 + Vite 8 single-page app
+- Tailwind CSS 4 for styling
+- PDF.js loaded in the browser to extract resume text from uploaded PDFs
+- Sends `jobDescription` and `resumeText` to the screening API
+- Validates the minimum payload lengths expected by the backend
 
 ### API Layer
 
 - Amazon API Gateway exposes the public endpoint
-- Handles request routing and CORS between frontend and backend
-- Can be used to apply throttling and rate limits
+- Handles CORS and routes `OPTIONS` / `POST` requests to Lambda
 
 ### Backend
 
-- Python logic deployed on AWS Lambda
-- Stores the Groq API key securely on the server side
-- Calls Groq with the `llama-3.1-8b-instant` model to generate screening results
-
-### Security and Access
-
-- AWS IAM manages permissions for S3 access and service roles
-- Secrets stay in the backend instead of the browser
+- Python `lambda_function.py` deployed on AWS Lambda
+- Reads `GROQ_API_KEY` from environment variables
+- Calls Groq chat completions with `llama-3.3-70b-versatile`
+- Returns strict JSON output for the frontend dashboard
 
 ## Features
 
-- Paste a target job description into a dedicated input panel
+- Paste a target job description
 - Upload or drag-and-drop a PDF resume
 - Extract resume text client-side with PDF.js
-- Send the job description and parsed resume text to a hosted screening endpoint
-- Display:
-  - overall match percentage
-  - matched skills
-  - missing skills
-  - analysis summary
-  - recommended improvements
-- Show clear error states for missing input, bad file types, PDF parsing failures, and API failures
+- Validate short or missing input before sending requests
+- Render a structured ATS result dashboard with:
+  - score gauge
+  - score breakdown
+  - matched skills with evidence
+  - missing skills with criticality and impact
+  - experience match
+  - seniority verdict
+  - red flags
+  - improvement actions with priority
+  - hiring recommendation
+  - generated `resumeId`
 
 ## Tech Stack
 
 - React 19
 - Vite 8
 - Tailwind CSS 4 via `@tailwindcss/vite`
-- Lucide React icons
-- PDF.js loaded from CDN at runtime
-- Amazon S3 for static frontend hosting
-- AWS Lambda for backend processing
-- Amazon API Gateway for API routing and CORS handling
-- AWS IAM for permissions and access control
-- Groq API with `llama-3.1-8b-instant`
+- Lucide React
+- PDF.js via CDN
+- AWS Lambda
+- Amazon API Gateway
+- Amazon S3 for static hosting
+- Groq API with `llama-3.3-70b-versatile`
 
-## How It Works
+## API Contract
 
-1. The user pastes a job description.
-2. The user uploads a PDF resume.
-3. The app reads the PDF in the browser and extracts plain text from every page.
-4. The app sends this payload to the screening API:
+The frontend posts this payload:
 
 ```json
 {
@@ -91,40 +90,83 @@ This project follows a serverless architecture to stay low-cost on AWS free tier
 }
 ```
 
-5. The API is expected to return a JSON response shaped like:
+### Backend Validation
+
+- `jobDescription` is required and must be at least `50` characters
+- `resumeText` is required and must be at least `100` characters
+
+### Success Response Shape
 
 ```json
 {
   "score": 78,
-  "matched_skills": ["react", "javascript"],
-  "missing_skills": ["aws", "docker"],
-  "experience_match": "strong",
-  "summary": "Concise analysis of the resume fit.",
-  "improvements": [
-    "Add measurable impact to recent projects.",
-    "Highlight cloud experience more clearly."
+  "score_breakdown": {
+    "skills_match": 28,
+    "experience_relevance": 22,
+    "seniority_alignment": 12,
+    "achievements_quality": 8
+  },
+  "matched_skills": [
+    {
+      "skill": "React",
+      "evidence": "Built and shipped dashboard components in a recent frontend role."
+    }
   ],
+  "missing_skills": [
+    {
+      "skill": "AWS",
+      "criticality": "required",
+      "impact": "The role expects production cloud deployment experience."
+    }
+  ],
+  "experience_match": "moderate",
+  "seniority_verdict": "matched",
+  "red_flags": [
+    "Claims leadership experience but gives no measurable outcomes."
+  ],
+  "summary": "Three-sentence evaluation.",
+  "improvements": [
+    {
+      "action": "Add metrics to project bullets and describe direct ownership.",
+      "priority": "high"
+    }
+  ],
+  "hiring_recommendation": "maybe",
   "resumeId": "generated-uuid"
+}
+```
+
+### Error Responses
+
+The Lambda may return:
+
+- `400` for missing or too-short inputs
+- `502` if the AI response cannot be parsed as JSON
+- `500` for other backend or upstream API errors
+
+Each error response contains:
+
+```json
+{
+  "error": "message"
 }
 ```
 
 ## API Endpoint
 
-The frontend currently posts results to:
+The frontend currently posts to:
 
 ```txt
 https://byka9fvisi.execute-api.ap-south-1.amazonaws.com/prod/screen
 ```
 
-This value is hardcoded in [`src/App.jsx`](./src/App.jsx). If you want to point the app at another backend, update the `API_URL` constant there.
+This value is currently hardcoded in `src/App.jsx`.
 
-The backend implementation lives separately from this frontend project. The Lambda handler is maintained in a `lambda_function.py` file and deployed to AWS Lambda.
-
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
-- Node.js 18+ recommended
+- Node.js 18+
 - npm
 
 ### Install
@@ -133,32 +175,24 @@ The backend implementation lives separately from this frontend project. The Lamb
 npm install
 ```
 
-### Run Locally
+### Run the Frontend
 
 ```bash
 npm run dev
 ```
 
-Then open the local Vite URL shown in the terminal, usually `http://localhost:5173`.
-
-### Production Build
+### Build the Frontend
 
 ```bash
 npm run build
 ```
 
-### Preview Production Build
+## Backend Deployment Notes
 
-```bash
-npm run preview
-```
-
-## Available Scripts
-
-- `npm run dev` starts the Vite development server
-- `npm run build` creates a production build
-- `npm run preview` previews the production build locally
-- `npm run lint` runs ESLint
+- Backend file: `lambda_function.py`
+- Environment variable required: `GROQ_API_KEY`
+- Lambda must allow `OPTIONS` and `POST` through API Gateway
+- Frontend and backend must stay in sync on the JSON response schema
 
 ## Project Structure
 
@@ -167,7 +201,6 @@ ai-resume-screener/
 ├── public/
 │   └── screenshots/
 ├── src/
-│   ├── assets/
 │   ├── components/
 │   │   ├── GaugeChart.jsx
 │   │   ├── Header.jsx
@@ -178,35 +211,13 @@ ai-resume-screener/
 │   ├── index.css
 │   └── main.jsx
 ├── index.html
-├── package.json
 ├── lambda_function.py
+├── package.json
 └── vite.config.js
 ```
 
-## Important Notes
+## Notes
 
-- Resume parsing happens in the browser using PDF.js loaded from a CDN.
-- Only PDF files are accepted by the uploader.
-- The app depends on the external screening API being available and returning the expected JSON shape.
-- There is currently no environment-variable based configuration for the API URL.
-- The Groq API key is kept server-side in the Lambda backend and is not exposed in the frontend.
-
-## Known Limitations
-
-- Complex PDF layouts may extract imperfectly because the app collects text layer content page by page.
-- If the hosted API changes its response format, the UI will break unless the frontend is updated too.
-- The backend is hosted on AWS free-tier infrastructure, so availability and throughput may be limited.
-
-## Backend Notes
-
-- Backend file: `lambda_function.py`
-- Model used: `Groq API with llama-3.1-8b-instant`
-- Deployment target: AWS Lambda behind Amazon API Gateway
-- Groq API key is read from the `GROQ_API_KEY` environment variable
-- Lambda returns CORS headers for `OPTIONS,POST`
-
-## Verification
-
-The README was updated to reflect the current frontend flow, serverless AWS architecture, backend location, and UI screenshots.
-
-In this environment, `npm run build` did not complete because Vite/Tailwind attempted to load a Windows native dependency and failed with a local `EPERM` / binary loading error before bundling.
+- Resume parsing quality depends on the PDF text layer
+- The API URL is hardcoded today; environment-based config would make deployment cleaner
+- If the Lambda response schema changes again, the frontend dashboard will need matching updates
