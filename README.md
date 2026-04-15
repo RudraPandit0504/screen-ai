@@ -241,7 +241,7 @@ ai-resume-screener/
 ## Backend Notes
 
 - Backend file: `lambda_function.py`
-- Model used: `Groq API with llama-3.1-8b-instant`
+- Model used: `Groq API with llama-3.3-70b-versatile`
 - Deployment target: AWS Lambda behind Amazon API Gateway
 - Groq API key is read from the `GROQ_API_KEY` environment variable
 - Lambda returns CORS headers for `OPTIONS,POST`
